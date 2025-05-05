@@ -15,8 +15,8 @@ namespace CaixasMisteriosas
     [ApiVersion(2, 1)]
     public class CaixasMisteriosas : TerrariaPlugin
     {
-        public override string Name => "Caixas Misteriosas Avançado";
-        public override string Author => "SeuNome";
+        public override string Name => "MysteryBox";
+        public override string Author => " Brasilzinhoz";
         public override string Description => "Sistema de caixas com pré-visualização de itens";
         public override Version Version => new Version(2, 0, 0);
 
@@ -71,7 +71,6 @@ namespace CaixasMisteriosas
                     if (player == null || !player.IsLoggedIn)
                         return;
 
-                    // Verifica se é uma caixa misteriosa
                     var caixa = Config.Caixas.FirstOrDefault(c => c.X == x && c.Y == y);
                     if (caixa != null)
                     {
@@ -79,8 +78,6 @@ namespace CaixasMisteriosas
                         AbrirCaixa(player, caixa);
                         return;
                     }
-
-                    // Verifica se está em modo edição
                     if (CaixasEditando.TryGetValue(player.Index, out int editChestIndex) && editChestIndex == chestIndex)
                     {
                         args.Handled = true;
@@ -91,7 +88,6 @@ namespace CaixasMisteriosas
             }
             else if (args.MsgID == PacketTypes.ChestGetContents)
             {
-                // Impede que outros jogadores vejam os itens de pré-visualização
                 var player = TShock.Players[args.Msg.whoAmI];
                 if (player != null && ChestProtect.Values.Any(p => p))
                 {
@@ -156,7 +152,6 @@ namespace CaixasMisteriosas
 
             try
             {
-                // Seleciona prêmio baseado na chance
                 var random = new Random();
                 double totalChance = caixa.Premios.Sum(p => p.Chance);
                 double roll = random.NextDouble() * totalChance;
@@ -187,7 +182,6 @@ namespace CaixasMisteriosas
                 }
 
                 
-                // Entrega prêmio
                 player.GiveItem(premio.ItemId, premio.Quantidade, premio.Prefixo);
                 player.SendSuccessMessage($"Você ganhou: {Lang.GetItemNameValue(premio.ItemId)} x{premio.Quantidade}");
 
@@ -259,7 +253,6 @@ namespace CaixasMisteriosas
             player.AwaitingTempPoint = 2;
             player.TempPoints = new Point[2];
 
-            // Adiciona a ação ao dicionário AwaitingResponse com uma chave única
             player.AwaitingResponse["SetarCaixa"] = new Action<object>((o) =>
             {
                 var points = (Point[])o;
@@ -280,14 +273,12 @@ namespace CaixasMisteriosas
                     return;
                 }
 
-                // Verifica se já existe
                 if (Config.Caixas.Any(c => c.X == x && c.Y == y))
                 {
                     player.SendErrorMessage("Este baú já está configurado!");
                     return;
                 }
 
-                // Cria nova caixa
                 var novaCaixa = new Config.CaixaConfig
                 {
                     X = x,
@@ -298,7 +289,6 @@ namespace CaixasMisteriosas
                 Config.Caixas.Add(novaCaixa);
                 SaveConfig();
 
-                // Entra em modo edição
                 CaixasEditando[player.Index] = chestIndex;
                 ChestProtect[chest.x * 1000 + chest.y] = true;
                 player.SendSuccessMessage($"Baú configurado! Agora adicione prêmios com /caixa addpremio <chance>");
@@ -340,7 +330,6 @@ namespace CaixasMisteriosas
                 return;
             }
 
-            // Adiciona como prêmio
             var premio = new Config.PremioConfig
             {
                 ItemId = player.SelectedItem.type,
@@ -352,7 +341,6 @@ namespace CaixasMisteriosas
             caixa.Premios.Add(premio);
             SaveConfig();
 
-            // Adiciona visualmente no baú (pré-visualização)
             for (int i = 0; i < 40; i++) // Procura slot vazio
             {
                 if (chest.item[i] == null || chest.item[i].IsAir)
@@ -395,14 +383,12 @@ namespace CaixasMisteriosas
                 return;
             }
 
-            // Remove visualmente do baú
             if (slot < chest.item.Length)
             {
                 chest.item[slot] = new Item();
                 NetMessage.SendData((int)PacketTypes.ChestItem, -1, -1, null, chestIndex, slot);
             }
 
-            // Remove da configuração
             caixa.Premios.RemoveAt(slot);
             SaveConfig();
 
